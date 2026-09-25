@@ -1,5 +1,25 @@
 import discord
 from discord.ext import commands
+import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+
+# שרת ווב פיקטיבי כדי ש-Render יהיה מרוצה וישאיר את הבוט דלוק
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+# הפעלת השרת ברקע
+threading.Thread(target=run_web_server, daemon=True).start()
+
+# --- מכאן קוד הבוט הרגיל שלך ---
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -9,14 +29,13 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f'הבוט מחובר בהצלחה כ-{bot.user}!')
-    activity = discord.Game(name="DrFishy Official BOT")
+    activity = discord.Game(name="מתכנת פקודות מתקדמות! 💻")
     await bot.change_presence(activity=activity)
 
 @bot.command()
 async def hello(ctx):
     await ctx.send(f'שלום {ctx.author.name}! הבוט מוכן לפעולה. 🤖')
 
-# מחלקת הטופס הקופץ המשודרג
 class EmbedModal(discord.ui.Modal, title="יצירת הודעת Embed מתקדמת"):
     embed_title = discord.ui.TextInput(
         label="כותרת ההודעה", 
@@ -51,7 +70,6 @@ class EmbedModal(discord.ui.Modal, title="יצירת הודעת Embed מתקדמ
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        # בחירת צבע מותאמת אישית או ברירת מחדל
         color = discord.Color.blue()
         c_text = self.embed_color.value.strip().lower()
         if c_text == "red":
@@ -63,28 +81,23 @@ class EmbedModal(discord.ui.Modal, title="יצירת הודעת Embed מתקדמ
         elif c_text == "purple":
             color = discord.Color.purple()
 
-        # יצירת ה-Embed עם כל ההגדרות
         embed_msg = discord.Embed(
             title=self.embed_title.value,
             description=self.embed_description.value,
             color=color
         )
 
-        # הוספת קישור לכותרת אם המשתמש הזין
         if self.embed_url.value.strip():
             embed_msg.url = self.embed_url.value.strip()
 
-        # הוספת תמונה אם המשתמש הזין קישור
         if self.embed_image.value.strip():
             embed_msg.set_image(url=self.embed_image.value.strip())
 
-        embed_msg.set_footer(text=f"All Rights To DrFishy")
+        embed_msg.set_footer(text=f"נוצר לבקשת {interaction.user.name}")
 
-        # שליחת ההודעה לערוץ
         await interaction.channel.send(embed=embed_msg)
         await interaction.response.send_message("הודעת ה-Embed נוצרה ונשלחה בהצלחה! 🚀", ephemeral=True)
 
-# מחלקת הכפתור שפותח את הטופס
 class EmbedButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -94,15 +107,14 @@ class EmbedButtonView(discord.ui.View):
         modal = EmbedModal()
         await interaction.response.send_modal(modal)
 
-# פקודה ששולחת את ההודעה עם הכפתור
 @bot.command()
 async def embed(ctx):
     view = EmbedButtonView()
-    await ctx.send("לחץ להמשך", view=view)
+    await ctx.send("לחץ על הכפתור למטה כדי לפתוח את חלון העיצוב המתקדם:", view=view)
     try:
         await ctx.message.delete()
     except:
         pass
 
-# החלף כאן את הטוקן שלך
+# הפעלת הבוט (החלף בטוקן האמיתי שלך)
 bot.run('YOUR_BOT_TOKEN_HERE')
